@@ -113,16 +113,13 @@ class ProcessExecutionError(EnvironmentError):
     well as the command line used to create the process (``argv``)
     """
 
-    def __init__(
-        self, argv, retcode, stdout=None, stderr=None, message=None, host=None
-    ):
+    def __init__(self, argv, retcode, stdout=None, stderr=None, message=None):
 
         # we can't use 'super' here since EnvironmentError only keeps the first 2 args,
         # which leads to failuring in loading this object from a pickle.dumps.
         Exception.__init__(self, argv, retcode)
 
         self.message = message
-        self.host = host
         self.argv = argv
         self.retcode = retcode
         self.all_output = []
@@ -152,22 +149,35 @@ class ProcessExecutionError(EnvironmentError):
             for _line in line.splitlines():
                 yield from ["\n       %6s | " % source, line]
 
-    def __str__(self):
+    def __str__(self, gist=0, host=None):
         # avoid an import cycle
         from plumbum.commands.base import shquote_list
 
-        cmd = " ".join(shquote_list(self.argv))
+        cmd = " ".join(shquote_list(self.argv[-gist:]))
         lines = []
         if self.message:
             lines = [self.message, "\nReturn code:  | ", str(self.retcode)]
         else:
             lines = ["Unexpected exit code: ", str(self.retcode)]
         cmd = "\n              | ".join(cmd.splitlines())
-        lines += ["\nCommand line: | ", cmd]
-        if self.host:
-            lines += ["\nHost:         | ", self.host]
+        lines += ["\nRemote Cmd.:  | ", cmd]
+        if host:
+            lines += ["\nHost:         | ", host]
+        if gist:
+            lines += ["\nLocal Cmd.:   | ", " ".join(shquote_list(self.argv[:-gist] + ["..."]))]
         lines += self.all_output
         return "".join(lines)
+
+
+class RemoteProcessExecutionError(ProcessExecutionError):
+    
+    def __init__(self, *args, host=None, gist=0, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.host = host
+        self.gist = gist
+
+    def __str__(self):
+        return super().__str__(gist=self.gist, host=self.host)
 
 
 class ProcessTimedOut(Exception):

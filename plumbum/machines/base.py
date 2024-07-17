@@ -1,6 +1,7 @@
 from plumbum.commands.processes import (
     CommandNotFound,
     ProcessExecutionError,
+    RemoteProcessExecutionError,
     ProcessTimedOut,
 )
 
@@ -18,15 +19,14 @@ class PopenAddons:
             )
 
         if retcode is not None:
-            if hasattr(retcode, "__contains__"):
-                if self.returncode not in retcode:
-                    raise ProcessExecutionError(
-                        getattr(self, "argv", None), self.returncode, stdout, stderr
-                    )
-            elif self.returncode != retcode:
-                raise ProcessExecutionError(
-                    getattr(self, "argv", None), self.returncode, stdout, stderr
-                )
+            if not hasattr(retcode, "__contains__"):
+                retcode = {retcode}
+            if self.returncode not in retcode:
+                args = getattr(self, "argv", None), self.returncode, stdout, stderr
+                if self._host:
+                    raise RemoteProcessExecutionError(*args, host=self._host, gist=self._gist)
+                else:
+                    raise ProcessExecutionError(*args)
 
 
 class BaseMachine:

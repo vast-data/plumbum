@@ -4,7 +4,7 @@ import threading
 import time
 
 from plumbum.commands import BaseCommand, run_proc
-from plumbum.commands.processes import ProcessExecutionError
+from plumbum.commands.processes import RemoteProcessExecutionError
 from plumbum.machines.base import PopenAddons
 
 
@@ -13,7 +13,7 @@ class ShellSessionError(Exception):
     :func:`ShellSession.popen <plumbum.session.ShellSession.popen>`"""
 
 
-class SSHCommsError(ProcessExecutionError, EOFError):
+class SSHCommsError(RemoteProcessExecutionError, EOFError):
     """Raises when the communication channel can't be created on the
     remote host or it times out."""
 

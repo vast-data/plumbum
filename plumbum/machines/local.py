@@ -24,7 +24,9 @@ from plumbum.path.remote import RemotePath
 class PlumbumLocalPopen(PopenAddons):
     iter_lines = iter_lines
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, gist=0, host=None, **kwargs):
+        self._host = host  # for remote commands, the host where the command is executed
+        self._gist = gist  # argv[-gist:] -> this is the 'gist' of the command, skipping the ssh preamble when exists
         self._proc = Popen(*args, **kwargs)  # pylint: disable=consider-using-with
 
     def __iter__(self):

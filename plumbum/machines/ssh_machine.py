@@ -134,7 +134,13 @@ class SshMachine(BaseRemoteMachine):
         cmdline = []
         cmdline.extend(ssh_opts)
         cmdline.append(self._fqhost)
-        if args:
+        if not args:
+            pass
+        else:
+            if hasattr(args, 'formulate'):
+                args = args.formulate()
+            elif not isinstance(args, (tuple, list)):
+                args = [args]
             envdelta = {}
             if hasattr(self, "env"):
                 envdelta.update(self.env.getdelta())
@@ -147,11 +153,8 @@ class SshMachine(BaseRemoteMachine):
             if envdelta:
                 cmdline.append("env")
                 cmdline.extend(f"{k}={shquote(v)}" for k, v in envdelta.items())
-            if isinstance(args, (tuple, list)):
-                cmdline.extend(args)
-            else:
-                cmdline.append(args)
-        return self._ssh_command[tuple(cmdline)].popen(**kwargs)
+            cmdline.extend(args)
+        return self._ssh_command[tuple(cmdline)].popen(**kwargs, host=self.host, gist=len(args))
 
     def nohup(self, command):
         """
